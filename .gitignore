@@ -1,0 +1,61 @@
+# Python
+
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+.venv/
+env/
+ENV/
+
+# Environment / Secrets
+
+.env
+.env.*
+!.env.example
+
+# Database
+
+*.db
+*.sqlite
+*.sqlite3
+
+# PostgreSQL local data
+postgres_data/
+
+# Bank Statements / Financial Data
+
+*.csv
+*.pdf
+
+# Test financial data
+test_transactions.csv
+test_data/
+
+# IDE
+
+.vscode/
+.idea/
+# OS
+
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Node / Frontend
+
+node_modules/
+dist/
+build/
+
+# ==============================
+# Coverage / Testing
+# ==============================
+
+.pytest_cache/
+.coverage
+htmlcov/
