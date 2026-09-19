@@ -107,6 +107,17 @@ async def import_pdf(
                     x_tolerance=2,
                     y_tolerance=3
                 )
+                print("\n--- PDF WORD POSITIONS ---")
+
+                for word in words[:100]:
+                    print(
+                        f"text={word['text']!r}, "
+                        f"x0={word['x0']:.1f}, "
+                        f"x1={word['x1']:.1f}, "
+                        f"top={word['top']:.1f}"
+                    )
+
+                print("--- END PDF WORD POSITIONS ---\n")
 
                 rows = group_words_into_rows(words)
 
