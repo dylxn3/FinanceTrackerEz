@@ -59,3 +59,10 @@ build/
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Node / Frontend
+
+node_modules/
+dist/
+build/
+*.local

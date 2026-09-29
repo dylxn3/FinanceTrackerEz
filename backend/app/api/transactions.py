@@ -109,7 +109,7 @@ async def import_pdf(
                 )
                 print("\n--- PDF WORD POSITIONS ---")
 
-                for word in words[:100]:
+                for word in words:
                     print(
                         f"text={word['text']!r}, "
                         f"x0={word['x0']:.1f}, "
@@ -185,31 +185,82 @@ def group_words_into_rows(words):
 
 
 def parse_pdf_row(row):
-    text = " ".join(
+    words = row["words"]
+
+    # Find the date in the Date column
+    date_word = None
+
+    for word in words:
+        if 410 <= word["x0"] <= 450:
+            if re.fullmatch(
+                r"(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\d{2}",
+                word["text"],
+                re.IGNORECASE
+            ):
+                date_word = word
+                break
+
+    if not date_word:
+        return None
+
+    # Ignore balance rows
+    description_text = " ".join(
         word["text"]
-        for word in row["words"]
+        for word in words
+        if word["x0"] < 220
     )
 
-    date_match = re.search(
-        r"\b(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\d{2}\b",
-        text,
-        re.IGNORECASE
-    )
+    upper_description = description_text.upper()
 
-    if not date_match:
+    if (
+        "BALANCE FORWARD" in upper_description
+        or "STARTING BALANCE" in upper_description
+        or "CLOSING BALANCE" in upper_description
+    ):
         return None
 
-    money_matches = re.findall(
-        r"\b\d+\.\d{2}\b",
-        text
-    )
+    # Find withdrawal amount
+    withdrawal_amount = None
 
-    if not money_matches:
+    for word in words:
+        if 220 <= word["x0"] <= 310:
+            if re.fullmatch(
+                r"\d{1,3}(?:,\d{3})*\.\d{2}",
+                word["text"]
+            ):
+                withdrawal_amount = Decimal(
+                    word["text"].replace(",", "")
+                )
+                break
+
+    # Find deposit amount
+    deposit_amount = None
+
+    for word in words:
+        if 335 <= word["x0"] <= 410:
+            if re.fullmatch(
+                r"\d{1,3}(?:,\d{3})*\.\d{2}",
+                word["text"]
+            ):
+                deposit_amount = Decimal(
+                    word["text"].replace(",", "")
+                )
+                break
+
+    # Determine transaction type
+    if withdrawal_amount is not None:
+        amount = withdrawal_amount
+        transaction_type = "debit"
+
+    elif deposit_amount is not None:
+        amount = deposit_amount
+        transaction_type = "credit"
+
+    else:
         return None
 
-    amount = Decimal(money_matches[0])
-
-    date_text = date_match.group(0).upper()
+    # Parse date
+    date_text = date_word["text"].upper()
 
     month = date_text[:3]
     day = int(date_text[3:])
@@ -235,14 +286,16 @@ def parse_pdf_row(row):
         day
     )
 
-    description = text.replace(
-        date_match.group(0),
-        ""
+    # Build description
+    description = " ".join(
+        word["text"]
+        for word in words
+        if word["x0"] < 220
     ).strip()
 
     return {
         "date": transaction_date,
         "description": description,
         "amount": amount,
-        "type": "debit"
+        "type": transaction_type
     }
